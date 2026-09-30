@@ -1,5 +1,6 @@
 import { AppConfig } from "./config";
 import { TelegramService } from "./telegram";
+import { formatZigFromAzig } from "./zig";
 import { TransferEvent, ZigWebSocketMonitor } from "./websocket";
 
 export class TransferMonitor {
@@ -45,12 +46,12 @@ export class TransferMonitor {
       return;
     }
 
-    if (event.amountUzig < this.config.thresholdUzig) {
+    if (event.amountAzig < this.config.thresholdAzig) {
       return;
     }
 
     this.rememberTx(event.txhash);
-    const amountZig = formatZigFromUzig(event.amountUzig);
+    const amountZig = formatZigFromAzig(event.amountAzig);
 
     if (isSenderMonitored) {
       this.telegram.enqueueAlert({
@@ -89,13 +90,4 @@ export class TransferMonitor {
       }
     }
   }
-}
-
-export function formatZigFromUzig(amountUzig: bigint): string {
-  const whole = amountUzig / 1_000_000n;
-  const fraction = amountUzig % 1_000_000n;
-  if (fraction === 0n) {
-    return whole.toString();
-  }
-  return `${whole}.${fraction.toString().padStart(6, "0").replace(/0+$/, "")}`;
 }

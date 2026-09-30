@@ -1,10 +1,11 @@
 import WebSocket from "ws";
+import { ZIG_DENOM } from "./zig";
 
 export interface TransferEvent {
   sender: string;
   recipient: string;
   denom: string;
-  amountUzig: bigint;
+  amountAzig: bigint;
   txhash: string;
 }
 
@@ -232,7 +233,7 @@ function parseTransferFromObject(
   }
 
   const denom = amountAndDenom.denom.toLowerCase();
-  if (denom !== "uzig") {
+  if (denom !== ZIG_DENOM) {
     return null;
   }
 
@@ -241,7 +242,7 @@ function parseTransferFromObject(
     recipient,
     txhash,
     denom,
-    amountUzig: amountAndDenom.amount
+    amountAzig: amountAndDenom.amount
   };
 }
 
@@ -255,8 +256,8 @@ function pickAmountAndDenom(
     return { amount: BigInt(amountRaw), denom };
   }
 
-  if (denom && typeof amountRaw === "number" && Number.isFinite(amountRaw)) {
-    return { amount: BigInt(Math.floor(amountRaw)), denom };
+  if (denom && typeof amountRaw === "number" && Number.isSafeInteger(amountRaw)) {
+    return { amount: BigInt(amountRaw), denom };
   }
 
   if (typeof amountRaw === "string") {

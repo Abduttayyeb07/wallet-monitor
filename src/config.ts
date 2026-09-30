@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { parseZigToRaw } from "./zig";
 
 dotenv.config();
 
@@ -351,7 +352,7 @@ export interface AppConfig {
   wsUrl: string;
   monitoredWallets: Set<string>;
   thresholdZig: number;
-  thresholdUzig: bigint;
+  thresholdAzig: bigint;
   telegramToken: string;
   telegramChatId: string;
   enableTelegramPolling: boolean;
@@ -365,8 +366,8 @@ export const config: AppConfig = {
   wsUrl: process.env.WS_URL?.trim() || "wss://zigchain-mainnet.zigscan.net/websocket",
   monitoredWallets: loadWallets(),
   thresholdZig: parsePositiveNumber("ALERT_THRESHOLD_ZIG", 50_000),
-  thresholdUzig: BigInt(
-    Math.floor(parsePositiveNumber("ALERT_THRESHOLD_ZIG", 50_000) * 1_000_000)
+  thresholdAzig: parseZigToRaw(
+    (process.env.ALERT_THRESHOLD_ZIG?.trim() || "50000")
   ),
   telegramToken: requireEnv("TELEGRAM_BOT_TOKEN"),
   telegramChatId: requireEnv("TELEGRAM_CHAT_ID"),
