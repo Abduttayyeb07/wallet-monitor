@@ -22,6 +22,9 @@ declare module "node-telegram-bot-api" {
       regexp: RegExp,
       callback: (msg: TelegramMessage, match: RegExpExecArray | null) => void | Promise<void>
     ): void;
+    on(event: "polling_error", listener: (error: Error) => void): this;
+    startPolling(options?: { restart?: boolean }): Promise<unknown>;
+    stopPolling(options?: { cancel?: boolean }): Promise<unknown>;
     sendMessage(
       chatId: string | number,
       text: string,

@@ -14,6 +14,7 @@ export class TelegramService {
   private readonly queue: TelegramAlert[] = [];
   private lastSentAt = 0;
   private isDraining = false;
+  private isRestartingPolling = false;
 
   constructor(
     token: string,
@@ -26,6 +27,7 @@ export class TelegramService {
     this.minIntervalMs = minIntervalMs;
     if (enablePolling) {
       this.registerStartHandler();
+      this.registerPollingErrorHandler();
       console.log("[telegram] Polling enabled (/start handler active)");
     } else {
       console.log("[telegram] Polling disabled (/start handler inactive)");
@@ -50,6 +52,44 @@ export class TelegramService {
         "[telegram] Could not send startup message. Ensure TELEGRAM_CHAT_ID is correct and open chat with bot via /start.",
         error
       );
+    }
+  }
+
+  // node-telegram-bot-api stops polling for good after an EFATAL error, so restart it with backoff.
+  private registerPollingErrorHandler(): void {
+    this.bot.on("polling_error", (error: Error & { code?: string }) => {
+      console.error(`[telegram] polling_error ${error.code ?? ""} ${error.message}`);
+      if (error.code === "EFATAL") {
+        void this.restartPolling();
+      }
+    });
+  }
+
+  private async restartPolling(): Promise<void> {
+    if (this.isRestartingPolling) {
+      return;
+    }
+    this.isRestartingPolling = true;
+    let delayMs = 5_000;
+    try {
+      for (;;) {
+        try {
+          await this.bot.stopPolling();
+        } catch {
+          // already stopped
+        }
+        await delay(delayMs);
+        try {
+          await this.bot.startPolling();
+          console.log("[telegram] Polling restarted");
+          return;
+        } catch (error) {
+          console.error("[telegram] Polling restart failed, retrying", error);
+          delayMs = Math.min(delayMs * 2, 60_000);
+        }
+      }
+    } finally {
+      this.isRestartingPolling = false;
     }
   }
 
